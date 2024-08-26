@@ -112,21 +112,37 @@ class PrinterProbe:
         return self.lift_speed
     def get_offsets(self):
         return self.x_offset, self.y_offset, self.z_offset
-    def _probe(self, speed):
+    def _probe(self, speed, gcmd, samples_retries):
         toolhead = self.printer.lookup_object('toolhead')
         curtime = self.printer.get_reactor().monotonic()
+        
         if 'z' not in toolhead.get_status(curtime)['homed_axes']:
             raise self.printer.command_error("Must home before probe")
+
         phoming = self.printer.lookup_object('homing')
         pos = toolhead.get_position()
         pos[2] = self.z_position
-        try:
-            epos = phoming.probing_move(self.mcu_probe, pos, speed)
-        except self.printer.command_error as e:
-            reason = str(e)
-            if "Timeout during endstop homing" in reason:
-                reason += HINT_TIMEOUT
-            raise self.printer.command_error(reason)
+        retries = 0
+
+        while True:
+            try:
+                epos = phoming.probing_move(self.mcu_probe, pos, speed)
+                break
+            except self.printer.command_error as e:
+                reason = str(e)
+                if "Probe triggered prior to movement" in reason:
+                    retries += 1
+                    if retries >= samples_retries:
+                        raise self.printer.command_error(reason)
+                    else:
+                        gcmd.respond_info(f"Probe trigger prior to movement. Retrying... ({retries}/{samples_retries})")
+                        toolhead.dwell(0.5)
+                        continue
+                else:
+                    if "Timeout during endstop homing" in reason:
+                        reason += HINT_TIMEOUT
+                    raise self.printer.command_error(reason)
+
         self.gcode.respond_info("probe at %.3f,%.3f is z=%.6f"
                                 % (epos[0], epos[1], epos[2]))
         return epos[:3]
@@ -163,7 +179,7 @@ class PrinterProbe:
         positions = []
         while len(positions) < sample_count:
             # Probe position
-            pos = self._probe(speed)
+            pos = self._probe(speed, gcmd, samples_retries)
             positions.append(pos)
             # Check samples tolerance
             z_positions = [p[2] for p in positions]
@@ -442,3 +458,4 @@ class ProbePointsHelper:
 
 def load_config(config):
     return PrinterProbe(config, ProbeEndstopWrapper(config))
+

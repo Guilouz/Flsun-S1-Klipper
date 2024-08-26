@@ -261,13 +261,13 @@ def get_ffi():
         srcfiles = get_abs_files(srcdir, SOURCE_FILES)
         ofiles = get_abs_files(srcdir, OTHER_FILES)
         destlib = get_abs_files(srcdir, [DEST_LIB])[0]
-        if check_build_code(srcfiles+ofiles+[__file__], destlib):
-            if check_gcc_option(SSE_FLAGS):
-                cmd = "%s %s %s" % (GCC_CMD, SSE_FLAGS, COMPILE_ARGS)
-            else:
-                cmd = "%s %s" % (GCC_CMD, COMPILE_ARGS)
-            logging.info("Building C code module %s", DEST_LIB)
-            do_build_code(cmd % (destlib, ' '.join(srcfiles)))
+        # if check_build_code(srcfiles+ofiles+[__file__], destlib):
+        #     if check_gcc_option(SSE_FLAGS):
+        #         cmd = "%s %s %s" % (GCC_CMD, SSE_FLAGS, COMPILE_ARGS)
+        #     else:
+        #         cmd = "%s %s" % (GCC_CMD, COMPILE_ARGS)
+        #     logging.info("Building C code module %s", DEST_LIB)
+        #     do_build_code(cmd % (destlib, ' '.join(srcfiles)))
         FFI_main = cffi.FFI()
         for d in defs_all:
             FFI_main.cdef(d)
@@ -294,9 +294,9 @@ def run_hub_ctrl(enable_power):
     hubdir = os.path.join(srcdir, HC_SOURCE_DIR)
     srcfiles = get_abs_files(hubdir, HC_SOURCE_FILES)
     destlib = get_abs_files(hubdir, [HC_TARGET])[0]
-    if check_build_code(srcfiles, destlib):
-        logging.info("Building C code module %s", HC_TARGET)
-        do_build_code(HC_COMPILE_CMD % (destlib, ' '.join(srcfiles)))
+    # if check_build_code(srcfiles, destlib):
+    #     logging.info("Building C code module %s", HC_TARGET)
+    #     do_build_code(HC_COMPILE_CMD % (destlib, ' '.join(srcfiles)))
     os.system(HC_CMD % (hubdir, enable_power))
 
 

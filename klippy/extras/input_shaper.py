@@ -6,7 +6,10 @@
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import collections
 import chelper
+import os,math,csv
 from . import shaper_defs
+
+FLOAT_EPSILON = 0.01
 
 class InputShaperParams:
     def __init__(self, axis, config):
@@ -37,10 +40,63 @@ class InputShaperParams:
     def get_shaper(self):
         if not self.shaper_freq:
             A, T = shaper_defs.get_none_shaper()
+        elif self.shaper_type == 'zero_zv':
+            A, T = self.csv_call(self.shaper_freq, self.damping_ratio, self.axis)
         else:
             A, T = self.shapers[self.shaper_type](
                     self.shaper_freq, self.damping_ratio)
         return len(A), A, T
+    def csv_call(self,shaper_freq, damping_ratio, axis,x_file_path='/tmp/shaper_calc_data_x.csv', y_file_path='/tmp/shaper_calc_data_y.csv'):
+        if axis == 'x':
+            if os.path.exists(x_file_path):
+                old_freq_x, old_A_x, old_T_x = self.get_shaper_file_data(x_file_path)
+                if math.fabs(old_freq_x - shaper_freq) < FLOAT_EPSILON:
+                    A = old_A_x
+                    T = old_T_x
+                else:
+                    A,T = self.generate_csv(shaper_freq, damping_ratio, x_file_path)
+            else:
+                A,T = self.generate_csv(shaper_freq, damping_ratio, x_file_path)
+        if axis == 'y':
+            if os.path.exists(y_file_path):
+                old_freq_y, old_A_y, old_T_y = self.get_shaper_file_data(y_file_path)
+                if math.fabs(old_freq_y - shaper_freq) < FLOAT_EPSILON:
+                    A = old_A_y
+                    T = old_T_y
+                else:
+                    A,T = self.generate_csv(shaper_freq, damping_ratio, y_file_path)    
+            else:
+                A,T = self.generate_csv(shaper_freq, damping_ratio, y_file_path)       
+        return (A, T)
+    def get_shaper_file_data(self,file_path):
+        with open(file_path, newline='') as csvfile: 
+            reader = csv.reader(csvfile)
+            headers = next(reader)
+            column_data = {header_x: [] for header_x in headers}
+            for row in reader:
+                for header, value in zip(headers, row):
+                    column_data[header].append(value)
+            first_column_data = column_data.get('freq', [])
+            second_column_data = column_data.get('time', [])
+            second_column_data = [float(_s) for _s in second_column_data]
+            third_column_data = column_data.get('amplitude', [])
+            third_column_data = [float(_s) for _s in third_column_data]
+            freq = float(first_column_data[0])
+        return freq, second_column_data, third_column_data
+    def generate_csv(self,shaper_freq, damping_ratio, dump_file_path):
+        A,T = shaper_defs.get_zero_zv_shaper(shaper_freq, damping_ratio)
+        try:
+            with open(dump_file_path, 'w') as csvfile:
+                csvfile.write("freq,time,amplitude")
+                csvfile.write("\n")
+                for i in range(len(A)):
+                    _new_A = f'{A[i]:.5f}'
+                    _new_T = f'{T[i]:.5f}'
+                    _line = ",".join([str(shaper_freq), _new_A, _new_T]) + "\n"
+                    csvfile.write(_line)
+        except IOError as e:
+            raise Exception("Error writing to file '%s': %s" % (dump_file_path, str(e)))
+        return (A, T)
     def get_status(self):
         return collections.OrderedDict([
             ('shaper_type', self.shaper_type),

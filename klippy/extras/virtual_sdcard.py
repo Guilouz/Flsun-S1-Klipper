@@ -178,7 +178,7 @@ class VirtualSD:
     def cmd_POWER_LOSS_RESTART_PRINT(self, gcmd): #wzy add
         filename = gcmd.get("FILENAME")
         fileposition = gcmd.get("FILEPOSITION")
-        fname = os.path.basename(filename)
+        fname = filename[len(self.sdcard_dirname)+1:]
         print_duration = gcmd.get("PRINT_DURATION")
         self.print_stats.modify_print_time(float(print_duration))
         self._load_file(gcmd, fname, fileposition, check_subdirs=True)      
@@ -192,7 +192,7 @@ class VirtualSD:
             if fname not in flist:
                 fname = files_by_lower[fname.lower()]
             fname = os.path.join(self.sdcard_dirname, fname)
-            f = open(fname, 'r')
+            f = open(fname, 'rb')
             f.seek(0, os.SEEK_END)
             fsize = f.tell()
             f.seek(0)
@@ -294,7 +294,7 @@ class VirtualSD:
         #flsun add, run START_PRINT when start a print
         if(fileposition == 0): #wzy modify
             self.gcode.run_script_from_command("G28")
-        if str(filename).strip() != ".test/line.gcode" and str(filename).strip() != ".test/cube.gcode":
+        if str(filename).strip() != ".test/line.gcode" and str(filename).strip() != ".test/cube.gcode" and fileposition == 0:
             subprocess.Popen(["bash", "/home/pi/flsun_func/AI_detect/before_printing_run.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
         if(fileposition == 0): #wzy modify
             self.gcode.run_script_from_command("START_PRINT")
@@ -348,7 +348,7 @@ class VirtualSD:
             return self.reactor.NEVER
         self.print_stats.note_start()
         gcode_mutex = self.gcode.get_mutex()
-        partial_input = ""
+        partial_input = b""
         lines = []
         error_message = None
         while not self.must_pause_work:
@@ -366,7 +366,7 @@ class VirtualSD:
                     logging.info("Finished SD card print")
                     self.gcode.respond_raw("Done printing file")
                     break
-                lines = data.split('\n')
+                lines = data.split(b'\n')
                 lines[0] = partial_input + lines[0]
                 partial_input = lines.pop()
                 lines.reverse()
@@ -382,7 +382,7 @@ class VirtualSD:
             next_file_position = self.file_position + len(line) + 1
             self.next_file_position = next_file_position
             try:
-                self.gcode.run_script(line)
+                self.gcode.run_script(line.decode('utf-8'))
             except self.gcode.error as e:
                 error_message = str(e)
                 try:

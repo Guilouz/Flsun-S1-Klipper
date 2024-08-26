@@ -264,7 +264,13 @@ class ClientConnection:
         self.send(result)
 
     def send(self, data):
-        jmsg = json.dumps(data, separators=(',', ':'))
+        try:
+            jmsg = json.dumps(data, separators=(',', ':'))
+        except Exception as e:
+            msg = ("Sending response to client Error: %s" % data)
+            logging.exception(msg)
+            self.close()
+            return
         self.send_buffer += jmsg.encode() + b"\x03"
         if not self.is_sending_data:
             self.is_sending_data = True

@@ -181,6 +181,8 @@ class GCodeDispatch:
             cpos = line.find(';')
             if cpos >= 0:
                 line = line[:cpos]
+            if len(line) > 2 and "G1 " not in line and "G0 " not in line:
+                logging.info('gcode:'+line)
             # Break line into parts and determine command
             parts = self.args_r.split(line.upper())
             numparts = len(parts)

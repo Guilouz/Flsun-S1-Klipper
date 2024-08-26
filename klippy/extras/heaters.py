@@ -29,7 +29,7 @@ class Heater:
         self.pwm_delay = self.sensor.get_report_time_delta()
         # Setup temperature checks
         self.min_extrude_temp = config.getfloat(
-            'min_extrude_temp', 170.,
+            'min_extrude_temp', 160.,
             minval=self.min_temp, maxval=self.max_temp)
         is_fileoutput = (self.printer.get_start_args().get('debugoutput')
                          is not None)
