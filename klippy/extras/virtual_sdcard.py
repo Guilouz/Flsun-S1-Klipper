@@ -8,6 +8,7 @@ import subprocess #flsun add
 import sys #flsun add
 import importlib #flsun add
 importlib.reload(sys) #flsun add
+from . import edgepoints
 #sys.setdefaultencoding('utf8') #flsun add ,add the three line to support Chinese,now don't need it because klipper use python3
 VALID_GCODE_EXTS = ['gcode', 'g', 'gco']
 
@@ -201,6 +202,7 @@ class VirtualSD:
             raise gcmd.error("Unable to open file")
         gcmd.respond_raw("File opened:%s Size:%d" % (filename, fsize))
         gcmd.respond_raw("File selected")
+        '''
         with open("/home/pi/printer_data/gcodes/" + str(filename)) as file_ob:
             #layer_text = ";LAYER_CHANGE"
             wall_text = ";TYPE:External perimeter" #prusa slicer wall out start position
@@ -283,7 +285,24 @@ class VirtualSD:
             content[0] = "X1=%f Y1=%f X2=%f Y2=%f X3=%f Y3=%f X4=%f Y4=%f X5=%f Y5=%f X6=%f Y6=%f X7=%f Y7=%f X8=%f Y8=%f\n" % (point1_x + 1.5, point1_y, point1_x + 3, point1_y, point2_x - 1.5, point2_y, point2_x - 3, point2_y, point3_x -1.5, point3_y, point3_x - 3, point3_y, point4_x + 1.5, point4_y, point4_x + 3, point4_y)
             with open("/home/pi/flsun_func/Structured_light/move_model.sh", 'w+') as temp:
                 temp.writelines(content)
-                          
+        '''
+        '''
+        #暂时屏蔽结果光采点
+        # 从gcode中读取首层，并生成各code坐标集合
+        edge_points = edgepoints.get_edge_points("/home/pi/printer_data/gcodes/" + str(filename),16, 0.6, 25.8)
+        # 格式化字符串：X1=1.0 Y1=2.0 X2=3.0 Y2=-3.5
+        formatted_str = ""
+        for i, (x, y) in enumerate(edge_points):
+            # 给每个坐标添加索引，从1开始
+            index = i + 1
+            formatted_str += f"X{index}={x} Y{index}={y} "
+        formatted_str += '\n'
+        with open("/home/pi/flsun_func/Structured_light/move_model.sh", 'r+') as temp:
+            content = temp.readlines()
+        content[0] = formatted_str
+        with open("/home/pi/flsun_func/Structured_light/move_model.sh", 'w+') as temp:
+            temp.writelines(content)
+        '''
         subprocess.Popen(["rm", "/home/pi/flsun_func/AI_detect/print_log.txt"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
         subprocess.Popen(["rm", "/home/pi/flsun_func/AI_detect/before_print_log.txt"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
         #subprocess.Popen(["rm", "/home/pi/flsun_func/time_lapse/png/"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add       

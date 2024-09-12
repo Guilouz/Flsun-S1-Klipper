@@ -163,6 +163,11 @@ class GCodeMove:
                         gcode = self.printer.lookup_object('gcode')
                         gcode.run_script_from_command("RESTORE_E_CURRENT")
                         self.first_layer_detect = False
+                        #flsun add,set first_layer_detect True
+                        with open("/home/pi/qt/out_linux/AiConfig.ini","r") as file_op:
+                            for line in file_op:
+                                if "FirstDetection=true" in line:
+                                    gcode.run_script_from_command("PAUSE")
                         subprocess.Popen(["bash", "/home/pi/flsun_func/Structured_light/move_model.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
             if self.last_position[3] < 10.0: #flsun add,set self.e_pos = 0 when a print start
                 self.e_pos = self.last_position[3]

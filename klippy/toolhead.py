@@ -263,6 +263,7 @@ class ToolHead:
             msg = "Error loading kinematics '%s'" % (kin_name,)
             logging.exception(msg)
             raise config.error(msg)
+        self.struct_light_func = False
         # Register commands
         gcode.register_command('G4', self.cmd_G4)
         gcode.register_command('M108', self.cmd_M108) #flsun add,excute while power loss
@@ -285,11 +286,11 @@ class ToolHead:
         sh = gcmd.get_float('S', None, above=0.)
         if sh == 1.0:
             subprocess.Popen(["bash", "/home/pi/flsun_func/Structured_light/move_cali.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
-        elif sh == 2.0:
+        elif sh == 2.0 and self.struct_light_func:
             subprocess.Popen(["bash", "/home/pi/flsun_func/Structured_light/move_line.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
-        elif sh == 3.0:
+        elif sh == 3.0 and self.struct_light_func:
             subprocess.Popen(["bash", "/home/pi/flsun_func/Structured_light/move_model.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
-        elif sh == 4.0:
+        elif sh == 4.0 and self.struct_light_func:
             subprocess.Popen(["bash", "/home/pi/flsun_func/Structured_light/move_cube.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
         elif sh == 100.0:
             subprocess.Popen(["bash", "/home/pi/flsun_func/Structured_light/structured_light_video_test.sh"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE) #flsun add
